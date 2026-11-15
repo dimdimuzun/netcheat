@@ -1,0 +1,20 @@
+version: 0.2
+
+phases:
+  install:
+    runtime-versions:
+      nodejs: 20
+    commands:
+      - npm install -g htmlhint
+  build:
+    commands:
+      - echo "Перевірка HTML..."
+      - htmlhint index.html error.html
+  post_build:
+    commands:
+      - echo "Збірка успішна $(date)"
+
+artifacts:
+  files:
+    - index.html
+    - error.html

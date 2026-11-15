@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Шпаргалка мережевика</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:800px;margin:2rem auto;padding:0 1rem;background:#0f172a;color:#e2e8f0}
+    h1,h2{color:#38bdf8}
+    input,button{padding:.5rem;font-size:1rem;border-radius:6px;border:1px solid #475569}
+    button{background:#38bdf8;border:none;cursor:pointer}
+    pre{background:#1e293b;padding:1rem;border-radius:8px;overflow-x:auto}
+    table{border-collapse:collapse;width:100%}
+    td,th{border:1px solid #334155;padding:.4rem;text-align:left}
+    code{color:#a7f3d0}
+  </style>
+</head>
+<body>
+  <h1>Шпаргалка мережевика</h1>
+  <p>Цей сайт розгорнуто автоматично через CI/CD пайплайн AWS. Версія збірки: <b>v1</b></p>
+
+  <h2>Калькулятор підмереж</h2>
+  <input id="cidr" value="192.168.10.77/26" size="22">
+  <button onclick="calc()">Порахувати</button>
+  <pre id="out">Введіть IP/префікс, наприклад 10.0.0.5/24</pre>
+
+  <h2>Команди Linux для діагностики мережі</h2>
+  <table>
+    <tr><th>Завдання</th><th>Команда</th></tr>
+    <tr><td>IP-адреси інтерфейсів</td><td><code>ip -br a</code></td></tr>
+    <tr><td>Таблиця маршрутів</td><td><code>ip route</code></td></tr>
+    <tr><td>Відкриті порти та процеси</td><td><code>ss -tulpn</code></td></tr>
+    <tr><td>Шлях пакета до хоста</td><td><code>traceroute / mtr example.com</code></td></tr>
+    <tr><td>DNS-запит</td><td><code>dig +short example.com</code></td></tr>
+    <tr><td>Перевірка HTTP-заголовків</td><td><code>curl -I https://example.com</code></td></tr>
+    <tr><td>Захоплення трафіку</td><td><code>sudo tcpdump -i eth0 port 80</code></td></tr>
+    <tr><td>Перевірка порту</td><td><code>nc -zv host 22</code></td></tr>
+  </table>
+
+  <script>
+    function toInt(ip){return ip.split('.').reduce((a,o)=>(a*256)+Number(o),0)>>>0}
+    function toIp(n){return [24,16,8,0].map(s=>(n>>>s)&255).join('.')}
+    function calc(){
+      const out=document.getElementById('out');
+      const m=document.getElementById('cidr').value.trim()
+        .match(/^(\d{1,3}(?:\.\d{1,3}){3})\/(\d{1,2})$/);
+      if(!m){out.textContent='Формат: 192.168.1.10/24';return}
+      const octets=m[1].split('.').map(Number), p=Number(m[2]);
+      if(p>32||octets.some(o=>o>255)){out.textContent='Некоректне значення';return}
+      const ip=toInt(m[1]);
+      const mask=p===0?0:(0xFFFFFFFF<<(32-p))>>>0;
+      const net=(ip&mask)>>>0;
+      const bc=(net|(~mask>>>0))>>>0;
+      const hosts=p>=31?(p===32?1:2):Math.pow(2,32-p)-2;
+      out.textContent=
+        `Мережа:     ${toIp(net)}/${p}\n`+
+        `Маска:      ${toIp(mask)}\n`+
+        `Broadcast:  ${toIp(bc)}\n`+
+        `Перший хост:${toIp(p>=31?net:net+1)}\n`+
+        `Останній:   ${toIp(p>=31?bc:bc-1)}\n`+
+        `Хостів:     ${hosts}`;
+    }
+    calc();
+  </script>
+</body>
+</html>
